@@ -10,6 +10,8 @@
     let pendingTx = null;
     let pendingDeleteTx = null;
     let pendingDeleteKey = null;
+    let pendingUpdateKey = null;
+    let pendingUpdateTx = null;
     let todoText = "";
     let loading = false;
 
@@ -127,6 +129,34 @@
 
     }
 
+    async function toggleTodo(itemId) {
+      return new Promise ( async(resolve, reject) => {
+        const contractResourcePath = evAPIPrefix + '/contract/' + contractAddress + '/toggleTodo';
+        try{
+          const response = await axios.post(contractResourcePath, 
+            {
+              'itemId': Number(itemId)  // corresponding to contract function parameter
+            }, 
+            {
+              headers: {
+                "X-API-KEY": API_KEY  // pass API key corresponding to your EthVigil account
+              }
+            }
+          );
+          if (response.data.success) {
+            resolve(response.data.data[0].txHash);
+          }
+          else {
+            reject(response);
+          }
+        }
+        catch(err) {
+          reject(err);
+        }
+        
+      });
+    }
+
     async function handleListClick(event) {
       if (event.target.classList.contains('js-delete-todo')) {
         const itemKey = event.target.parentElement.dataset.key;
@@ -139,6 +169,21 @@
         catch(err) {
           console.error('Problem sending delete transaction. Returned error: ', err);
           await showAlert("Could not submit TODO note as transaction. Let's try again.");
+          return;
+        }
+      }
+
+      if (event.target.classList.contains('js-tick')) {
+        const itemKey = event.target.parentElement.dataset.key;
+        console.log('Got toggle action on item key: ', itemKey);
+        try {
+          const txhash = await toggleTodo(itemKey);
+          pendingUpdateTx = txhash;
+          pendingUpdateKey = itemKey;
+        }
+        catch (err) {
+          console.error('Problem sending toggle transaction. Returned error: ', err);
+          await showAlert("Could not toggle TODO note as transaction. Let's try again.");
           return;
         }
       }
@@ -173,6 +218,19 @@
             // console.log('Filtered todoItems: ', todoItems);
             pendingDeleteKey = null;
             break;
+          case 'TodoItemUpdated':
+            let updatedId = value.event_data.itemId;
+            let updatedStatus = value.event_data.updatedStatus;
+            console.log('Todo item updated, taking action on UI ', updatedId);
+            let updatedTodoItems = [];
+           todoItems.forEach((element, index) => {
+            if (index == updatedId) {
+              element.checked = updatedStatus;
+            }
+            updatedTodoItems.push(element);
+           });
+           todoItems = updatedTodoItems;
+           break;
         }
       }
     });
@@ -200,14 +258,27 @@
     <ul class="todo-list js-todo-list">
     {#each todoItems as item}
       {#if item.id != pendingDeleteKey}
-        <li class="todo-item" data-key="{item.id}" on:click={handleListClick}>
-         <input id="{item.id}" type="checkbox" />
-        <label for="{item.id}" class='tick js-tick'></label>
-        <span>{item.text}</span>
-        <button class="delete-todo js-delete-todo">
-          <svg><use href="#delete-icon"></use></svg>
-        </button>
-      </li>
+        {#if !item.checked}
+          <li class="todo-item" data-key="{item.id}" on:click={handleListClick}>
+            <input id="{item.id}" type="checkbox" />
+            <label for="{item.id}" class='tick js-tick'></label>
+            <span>{item.text}</span>
+            <button class="delete-todo js-delete-todo">
+              <svg><use href="#delete-icon"></use></svg>
+            </button>
+          </li>
+        {:else}
+
+          <li class="todo-item done" data-key="{item.id}" on:click={handleListClick}>
+            <input id="{item.id}" type="checkbox" />
+            <label for="{item.id}" class='tick js-tick'></label>
+            <span>{item.text}</span>
+            <button class="delete-todo js-delete-todo">
+              <svg><use href="#delete-icon"></use></svg>
+            </button>
+          </li>
+
+        {/if}
       {:else}
         <li class="todo-item" data-key="{item.id}" on:click={handleListClick} transition:fly>
          <input id="{item.id}" type="checkbox" />
