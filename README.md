@@ -3,6 +3,7 @@
 Go through these blog posts if you wish to understand some of the design decisions in creating the app. The coding effort was the outcome of a two-part developer jam organized by BlockVigil in Bangalore 🇮🇳
 
 [Part 1: BlockVigil Developer Updates — Kicking off 2020 with Websocket integrations for Ethereum](https://medium.com/blockvigil/blockvigil-developer-updates-kicking-off-2020-with-websocket-integrations-for-ethereum-de38cd145656)
+
 [Part 2: BlockVigil Developer Jam #2 Updates](https://medium.com/blockvigil/blockvigil-developer-jam-2-updates-a723a759f42d)
 
 ## Before you begin
